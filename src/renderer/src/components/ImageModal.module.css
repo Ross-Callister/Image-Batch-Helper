@@ -1,0 +1,118 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: var(--surface);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.title {
+  font-size: 13px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+  background: var(--surface2);
+  color: var(--text2);
+  border-radius: 50%;
+}
+
+.closeBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.closeBtn:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.imageWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+}
+
+.imageWrap img {
+  /* Constrain directly to viewport so the image is never cropped.
+     80px accounts for the header (~46px) + vertical padding (32px). */
+  max-width: calc(90vw - 32px);
+  max-height: calc(90vh - 80px);
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+}
+
+.navBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border-radius: 50%;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  z-index: 1;
+}
+
+.navBtn:hover {
+  opacity: 1;
+}
+
+.navBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.prev {
+  left: 8px;
+}
+
+.next {
+  right: 8px;
+}

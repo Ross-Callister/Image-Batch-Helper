@@ -1,0 +1,68 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0f0f13;
+  --surface: #1c1c23;
+  --surface2: #25252f;
+  --surface3: #2e2e3a;
+  --border: #2d2d3a;
+  --text: #e2e2ea;
+  --text2: #8888a0;
+  --accent: #4f8ef7;
+  --accent-dim: rgba(79, 142, 247, 0.15);
+  --danger: #ef4444;
+  --danger-dim: rgba(239, 68, 68, 0.18);
+  --success: #22c55e;
+  --radius: 6px;
+  --font: system-ui, -apple-system, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button {
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  transition: background 0.12s, opacity 0.12s;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
