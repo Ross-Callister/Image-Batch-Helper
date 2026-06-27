@@ -9,5 +9,8 @@ contextBridge.exposeInMainWorld('api', {
 
   touchImages: (paths: string[]) => ipcRenderer.invoke('images:touch', paths),
 
-  confirm: (message: string) => ipcRenderer.invoke('dialog:confirm', message)
+  confirm: (message: string) => ipcRenderer.invoke('dialog:confirm', message),
+
+  renameImages: (renames: Array<{oldPath: string, newName: string}>) =>
+    ipcRenderer.invoke('images:rename', renames)
 })

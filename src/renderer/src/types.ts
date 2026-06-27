@@ -6,7 +6,7 @@ export interface ImageItem {
   birthtime: number
 }
 
-export type SortField = 'name' | 'mtime' | 'birthtime' | 'custom'
+export type SortField = 'name' | 'mtime' | 'birthtime' | 'custom' | 'elo'
 export type SortDir = 'asc' | 'desc'
 
 export interface IpcResult {
@@ -22,6 +22,9 @@ declare global {
       trashImages: (paths: string[]) => Promise<IpcResult>
       touchImages: (paths: string[]) => Promise<IpcResult>
       confirm: (message: string) => Promise<boolean>
+      renameImages: (
+        renames: Array<{oldPath: string, newName: string}>
+      ) => Promise<Array<{oldPath: string, newName: string, newPath: string, ok: boolean, error?: string}>>
     }
   }
 }

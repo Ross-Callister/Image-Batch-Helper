@@ -2,13 +2,47 @@ import { useState, useCallback } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import type { ImageItem, SortField, SortDir } from './types'
 
-function applySort(images: ImageItem[], field: SortField, dir: SortDir): ImageItem[] {
+const ELO_K = 64
+const ELO_DEFAULT = 1000
+
+function eloExpected(ratingA: number, ratingB: number): number {
+  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400))
+}
+
+function eloUpdate(
+  scores: Map<string, number>,
+  aId: string,
+  bId: string,
+  sA: number // 1 = A wins, 0 = B wins, 0.5 = draw
+): Map<string, number> {
+  const rA = scores.get(aId) ?? ELO_DEFAULT
+  const rB = scores.get(bId) ?? ELO_DEFAULT
+  const eA = eloExpected(rA, rB)
+  const eB = eloExpected(rB, rA)
+  const sB = 1 - sA
+  const next = new Map(scores)
+  next.set(aId, Math.min(3000, Math.max(100, Math.round(rA + ELO_K * (sA - eA)))))
+  next.set(bId, Math.min(3000, Math.max(100, Math.round(rB + ELO_K * (sB - eB)))))
+  return next
+}
+
+function applySort(
+  images: ImageItem[],
+  field: SortField,
+  dir: SortDir,
+  eloScores?: Map<string, number>
+): ImageItem[] {
   if (field === 'custom') return images
   return [...images].sort((a, b) => {
     let cmp = 0
     if (field === 'name') cmp = a.name.localeCompare(b.name, undefined, { numeric: true })
     else if (field === 'mtime') cmp = a.mtime - b.mtime
     else if (field === 'birthtime') cmp = a.birthtime - b.birthtime
+    else if (field === 'elo') {
+      const sa = eloScores?.get(a.id) ?? ELO_DEFAULT
+      const sb = eloScores?.get(b.id) ?? ELO_DEFAULT
+      cmp = sa - sb
+    }
     return dir === 'asc' ? cmp : -cmp
   })
 }
@@ -23,6 +57,8 @@ export function useImageStore() {
   const [modalImageId, setModalImageId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isWorking, setIsWorking] = useState(false)
+  const [eloScores, setEloScores] = useState<Map<string, number>>(new Map())
+  const [isRanking, setIsRanking] = useState(false)
 
   const loadImages = useCallback(
     async (paths: string[]) => {
@@ -35,12 +71,17 @@ export function useImageStore() {
 
       try {
         const items = await window.api.loadImages(paths)
-        const sorted = applySort(items, sortField, sortDir)
+        const newSortField: SortField = sortField === 'elo' ? 'name' : sortField
+        const newSortDir: SortDir = sortField === 'elo' ? 'asc' : sortDir
+        const sorted = applySort(items, newSortField, newSortDir)
         setImages(sorted)
         setSelectedIds(new Set())
         setCulledIds(new Set())
         setLastClickedId(null)
         setModalImageId(null)
+        setEloScores(new Map())
+        setSortField(newSortField)
+        setSortDir(newSortDir)
         setError(null)
       } catch {
         setError('Failed to load images.')
@@ -107,14 +148,15 @@ export function useImageStore() {
       if (sortField === field) {
         const newDir: SortDir = sortDir === 'asc' ? 'desc' : 'asc'
         setSortDir(newDir)
-        setImages((prev) => applySort(prev, field, newDir))
+        setImages((prev) => applySort(prev, field, newDir, eloScores))
       } else {
         setSortField(field)
-        setSortDir('asc')
-        setImages((prev) => applySort(prev, field, 'asc'))
+        setSortDir(field === 'elo' ? 'desc' : 'asc')
+        const newDir: SortDir = field === 'elo' ? 'desc' : 'asc'
+        setImages((prev) => applySort(prev, field, newDir, eloScores))
       }
     },
-    [sortField, sortDir]
+    [sortField, sortDir, eloScores]
   )
 
   const reorderImages = useCallback((activeId: string, overId: string) => {
@@ -194,6 +236,9 @@ export function useImageStore() {
     setCulledIds(new Set())
     setLastClickedId(null)
     setModalImageId(null)
+    setEloScores(new Map())
+    setSortField('name')
+    setSortDir('asc')
     setError(null)
   }, [])
 
@@ -207,6 +252,105 @@ export function useImageStore() {
     setSelectedIds(new Set())
   }, [])
 
+  // ELO ranking actions
+  const startRanking = useCallback(() => {
+    setEloScores((prev) => {
+      const next = new Map(prev)
+      images.forEach((img) => {
+        if (!next.has(img.id)) next.set(img.id, ELO_DEFAULT)
+      })
+      return next
+    })
+    setIsRanking(true)
+  }, [images])
+
+  const stopRanking = useCallback(() => {
+    setIsRanking(false)
+  }, [])
+
+  const recordComparison = useCallback((winnerId: string, loserId: string) => {
+    setEloScores((prev) => eloUpdate(prev, winnerId, loserId, 1))
+  }, [])
+
+  const recordSkip = useCallback((aId: string, bId: string) => {
+    setEloScores((prev) => eloUpdate(prev, aId, bId, 0.5))
+  }, [])
+
+  const applyEloSort = useCallback(() => {
+    setSortField('elo')
+    setSortDir('desc')
+    setImages((prev) => applySort(prev, 'elo', 'desc', eloScores))
+  }, [eloScores])
+
+  const renameAll = useCallback(
+    async (baseName: string) => {
+      if (images.length === 0 || !baseName.trim()) return
+      setIsWorking(true)
+      try {
+        const count = images.length
+        const digits = Math.max(3, String(count).length)
+        const renames = images.map((img, idx) => {
+          const dotIdx = img.name.lastIndexOf('.')
+          const ext = dotIdx !== -1 ? img.name.slice(dotIdx) : ''
+          const num = String(idx + 1).padStart(digits, '0')
+          return {oldPath: img.path, newName: `${baseName.trim()}_${num}${ext}`}
+        })
+        const results = await window.api.renameImages(renames)
+
+        const pathMap = new Map<string, {newPath: string; newName: string}>()
+        for (const r of results) {
+          if (r.ok) pathMap.set(r.oldPath, {newPath: r.newPath, newName: r.newName})
+        }
+
+        setImages((prev) =>
+          prev.map((img) => {
+            const mapped = pathMap.get(img.id)
+            return mapped ? {...img, id: mapped.newPath, path: mapped.newPath, name: mapped.newName} : img
+          })
+        )
+        setSelectedIds((prev) => {
+          const next = new Set<string>()
+          prev.forEach((id) => {
+            const mapped = pathMap.get(id)
+            next.add(mapped ? mapped.newPath : id)
+          })
+          return next
+        })
+        setCulledIds((prev) => {
+          const next = new Set<string>()
+          prev.forEach((id) => {
+            const mapped = pathMap.get(id)
+            next.add(mapped ? mapped.newPath : id)
+          })
+          return next
+        })
+        setEloScores((prev) => {
+          const next = new Map<string, number>()
+          prev.forEach((score, id) => {
+            const mapped = pathMap.get(id)
+            next.set(mapped ? mapped.newPath : id, score)
+          })
+          return next
+        })
+        setModalImageId((prev) => {
+          if (!prev) return prev
+          const mapped = pathMap.get(prev)
+          return mapped ? mapped.newPath : prev
+        })
+
+        const failures = results.filter((r) => !r.ok)
+        if (failures.length > 0) {
+          setError(`Failed to rename ${failures.length} of ${count} file(s).`)
+        }
+      } catch {
+        setError('Failed to rename files.')
+      } finally {
+        setIsWorking(false)
+      }
+    },
+    [images]
+  )
+
   return {
     images,
     selectedIds,
@@ -216,6 +360,8 @@ export function useImageStore() {
     modalImageId,
     error,
     isWorking,
+    eloScores,
+    isRanking,
     loadImages,
     handleImageClick,
     openModal,
@@ -230,6 +376,12 @@ export function useImageStore() {
     clearView,
     dismissError,
     selectAll,
-    selectNone
+    selectNone,
+    startRanking,
+    stopRanking,
+    recordComparison,
+    recordSkip,
+    applyEloSort,
+    renameAll
   }
 }

@@ -13,11 +13,9 @@ function scanDirectory(dirPath: string): string[] {
   try {
     const entries = fs.readdirSync(dirPath, { withFileTypes: true })
     for (const entry of entries) {
-      const fullPath = path.join(dirPath, entry.name)
-      if (entry.isDirectory()) {
-        results.push(...scanDirectory(fullPath))
-      } else if (entry.isFile() && isImageFile(fullPath)) {
-        results.push(fullPath)
+      if (entry.isFile()) {
+        const fullPath = path.join(dirPath, entry.name)
+        if (isImageFile(fullPath)) results.push(fullPath)
       }
     }
   } catch (e) {
@@ -80,6 +78,21 @@ export function registerIpcHandlers(): void {
       }
     }
     return { ok: errors.length === 0, errors }
+  })
+
+  ipcMain.handle('images:rename', async (_event, renames: Array<{oldPath: string, newName: string}>) => {
+    const results: Array<{oldPath: string, newName: string, newPath: string, ok: boolean, error?: string}> = []
+    for (const {oldPath, newName} of renames) {
+      const newPath = path.join(path.dirname(oldPath), newName)
+      try {
+        await fs.promises.rename(oldPath, newPath)
+        results.push({oldPath, newName, newPath, ok: true})
+      } catch (e) {
+        results.push({oldPath, newName, newPath, ok: false, error: String(e)})
+        console.error('Error renaming:', oldPath, '->', newPath, e)
+      }
+    }
+    return results
   })
 
   ipcMain.handle('dialog:confirm', async (_event, message: string) => {

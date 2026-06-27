@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { SortField, SortDir } from '../types'
 import styles from './Toolbar.module.css'
 
@@ -18,6 +18,9 @@ interface Props {
   onSelectAll: () => void
   onSelectNone: () => void
   onClearView: () => void
+  onStartRanking: () => void
+  onRenameAll: (baseName: string) => void
+  eloCount: number
   onDismissError: () => void
 }
 
@@ -25,17 +28,20 @@ function SortButton({
   label,
   active,
   dir,
-  onClick
+  onClick,
+  disabled
 }: {
   label: string
   active: boolean
   dir: SortDir
   onClick: () => void
+  disabled?: boolean
 }) {
   return (
     <button
       className={`${styles.sortBtn} ${active ? styles.sortActive : ''}`}
       onClick={onClick}
+      disabled={disabled}
       title={active ? `Sorted by ${label} (${dir === 'asc' ? 'A→Z' : 'Z→A'}) — click to reverse` : `Sort by ${label}`}
     >
       <span>{label}</span>
@@ -62,8 +68,13 @@ export default function Toolbar({
   onSelectAll,
   onSelectNone,
   onClearView,
+  onStartRanking,
+  onRenameAll,
+  eloCount,
   onDismissError
 }: Props) {
+  const [baseName, setBaseName] = useState('')
+
   return (
     <aside className={styles.toolbar}>
       <div className={styles.section}>
@@ -72,6 +83,7 @@ export default function Toolbar({
           <SortButton label="Name" active={sortField === 'name'} dir={sortDir} onClick={() => onSort('name')} />
           <SortButton label="Modified" active={sortField === 'mtime'} dir={sortDir} onClick={() => onSort('mtime')} />
           <SortButton label="Created" active={sortField === 'birthtime'} dir={sortDir} onClick={() => onSort('birthtime')} />
+          <SortButton label="Rating" active={sortField === 'elo'} dir={sortDir} onClick={() => onSort('elo')} disabled={eloCount === 0} />
         </div>
         <button
           className={`${styles.customBtn} ${sortField === 'custom' ? styles.customActive : ''}`}
@@ -161,6 +173,45 @@ export default function Toolbar({
           title="Remove all images from view without deleting them"
         >
           Clear View
+        </button>
+
+        <div className={styles.divider} />
+
+        <button
+          className={`${styles.actionBtn} ${styles.rankBtn}`}
+          onClick={onStartRanking}
+          disabled={totalCount < 2 || isWorking}
+          title="Open pairwise comparison session to rank images by quality"
+        >
+          Start Ranking
+        </button>
+      </div>
+
+      <div className={styles.divider} />
+
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>Rename</div>
+        <input
+          className={styles.renameInput}
+          type="text"
+          placeholder="base-name"
+          value={baseName}
+          onChange={(e) => setBaseName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && baseName.trim() && totalCount > 0 && !isWorking) {
+              onRenameAll(baseName)
+            }
+          }}
+          disabled={isWorking}
+          spellCheck={false}
+        />
+        <button
+          className={styles.actionBtn}
+          onClick={() => onRenameAll(baseName)}
+          disabled={!baseName.trim() || totalCount === 0 || isWorking}
+          title={`Rename all ${totalCount} images to ${baseName.trim() || 'base-name'}_001, _002…`}
+        >
+          Rename All ({totalCount})
         </button>
       </div>
 

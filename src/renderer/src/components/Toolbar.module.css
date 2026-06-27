@@ -165,6 +165,41 @@
   background: #dc2626;
 }
 
+.rankBtn:not(:disabled) {
+  color: var(--accent);
+}
+
+.rankBtn:hover:not(:disabled) {
+  background: var(--accent-dim);
+}
+
+/* Rename */
+.renameInput {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.renameInput::placeholder {
+  color: var(--text2);
+  opacity: 0.6;
+}
+
+.renameInput:focus {
+  border-color: var(--accent);
+}
+
+.renameInput:disabled {
+  opacity: 0.5;
+}
+
 /* Error */
 .error {
   margin: 8px 14px 14px;

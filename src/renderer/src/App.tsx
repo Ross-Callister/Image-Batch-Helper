@@ -3,6 +3,7 @@ import { useImageStore } from './store'
 import DropZone from './components/DropZone'
 import ImageGrid from './components/ImageGrid'
 import ImageModal from './components/ImageModal'
+import RankingSession from './components/RankingSession'
 import Toolbar from './components/Toolbar'
 import styles from './App.module.css'
 
@@ -18,6 +19,11 @@ export default function App() {
     },
     [store.loadImages]
   )
+
+  const handleApplySort = useCallback(() => {
+    store.applyEloSort()
+    store.stopRanking()
+  }, [store.applyEloSort, store.stopRanking])
 
   return (
     <div className={styles.root}>
@@ -46,6 +52,7 @@ export default function App() {
             sortDir={store.sortDir}
             isWorking={store.isWorking}
             error={store.error}
+            eloCount={store.eloScores.size}
             onSort={store.setSort}
             onCull={store.cullSelected}
             onUncull={store.uncullSelected}
@@ -54,6 +61,8 @@ export default function App() {
             onSelectAll={store.selectAll}
             onSelectNone={store.selectNone}
             onClearView={store.clearView}
+            onStartRanking={store.startRanking}
+            onRenameAll={store.renameAll}
             onDismissError={store.dismissError}
           />
         </div>
@@ -65,6 +74,16 @@ export default function App() {
         hasNext={modalIdx >= 0 && modalIdx < store.images.length - 1}
         onClose={store.closeModal}
         onNavigate={store.navigateModal}
+      />
+
+      <RankingSession
+        isOpen={store.isRanking}
+        images={store.images}
+        eloScores={store.eloScores}
+        onClose={store.stopRanking}
+        onComparison={store.recordComparison}
+        onSkip={store.recordSkip}
+        onApplySort={handleApplySort}
       />
     </div>
   )
