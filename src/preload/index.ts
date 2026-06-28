@@ -12,5 +12,8 @@ contextBridge.exposeInMainWorld('api', {
   confirm: (message: string) => ipcRenderer.invoke('dialog:confirm', message),
 
   renameImages: (renames: Array<{oldPath: string, newName: string}>) =>
-    ipcRenderer.invoke('images:rename', renames)
+    ipcRenderer.invoke('images:rename', renames),
+
+  saveTags: (saves: Array<{imagePath: string, tags: string[]}>) =>
+    ipcRenderer.invoke('tags:save', saves)
 })

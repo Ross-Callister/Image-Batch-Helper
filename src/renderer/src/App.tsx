@@ -4,6 +4,7 @@ import DropZone from './components/DropZone'
 import ImageGrid from './components/ImageGrid'
 import ImageModal from './components/ImageModal'
 import RankingSession from './components/RankingSession'
+import TagPanel from './components/TagPanel'
 import Toolbar from './components/Toolbar'
 import styles from './App.module.css'
 
@@ -31,6 +32,16 @@ export default function App() {
 
       {store.images.length > 0 && (
         <div className={styles.layout}>
+          <TagPanel
+            images={store.images}
+            selectedIds={store.selectedIds}
+            draftTags={store.draftTags}
+            hasPendingTags={store.hasPendingTags}
+            isWorking={store.isWorking}
+            onAddTag={store.addTagToSelected}
+            onRemoveTag={store.removeTagFromSelected}
+            onSaveTags={store.saveTags}
+          />
           <main className={styles.main}>
             <ImageGrid
               images={store.images}

@@ -43,12 +43,20 @@ export function registerIpcHandlers(): void {
 
     return imagePaths.map((p) => {
       const stat = fs.statSync(p)
+      const tagPath = path.join(path.dirname(p), path.basename(p, path.extname(p)) + '.txt')
+      let tags: string[] = []
+      try {
+        if (fs.existsSync(tagPath)) {
+          tags = fs.readFileSync(tagPath, 'utf-8').split(',').map(t => t.trim()).filter(Boolean)
+        }
+      } catch { /* ignore unreadable tag files */ }
       return {
         id: p,
         name: path.basename(p),
         path: p,
         mtime: stat.mtimeMs,
-        birthtime: stat.birthtimeMs
+        birthtime: stat.birthtimeMs,
+        tags
       }
     })
   })
@@ -75,6 +83,24 @@ export function registerIpcHandlers(): void {
       } catch (e) {
         errors.push(p)
         console.error('Error touching:', p, e)
+      }
+    }
+    return { ok: errors.length === 0, errors }
+  })
+
+  ipcMain.handle('tags:save', async (_event, saves: Array<{imagePath: string, tags: string[]}>) => {
+    const errors: string[] = []
+    for (const {imagePath, tags} of saves) {
+      const tagPath = path.join(path.dirname(imagePath), path.basename(imagePath, path.extname(imagePath)) + '.txt')
+      try {
+        if (tags.length === 0) {
+          if (fs.existsSync(tagPath)) await fs.promises.unlink(tagPath)
+        } else {
+          await fs.promises.writeFile(tagPath, tags.join(', '), 'utf-8')
+        }
+      } catch (e) {
+        errors.push(imagePath)
+        console.error('Error saving tags:', tagPath, e)
       }
     }
     return { ok: errors.length === 0, errors }

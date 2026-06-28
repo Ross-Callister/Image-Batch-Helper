@@ -59,6 +59,8 @@ export function useImageStore() {
   const [isWorking, setIsWorking] = useState(false)
   const [eloScores, setEloScores] = useState<Map<string, number>>(new Map())
   const [isRanking, setIsRanking] = useState(false)
+  // Keys are image ids (paths); values are the working tag list (unsaved edits)
+  const [draftTags, setDraftTags] = useState<Map<string, string[]>>(new Map())
 
   const loadImages = useCallback(
     async (paths: string[]) => {
@@ -80,6 +82,7 @@ export function useImageStore() {
         setLastClickedId(null)
         setModalImageId(null)
         setEloScores(new Map())
+        setDraftTags(new Map())
         setSortField(newSortField)
         setSortDir(newSortDir)
         setError(null)
@@ -237,6 +240,7 @@ export function useImageStore() {
     setLastClickedId(null)
     setModalImageId(null)
     setEloScores(new Map())
+    setDraftTags(new Map())
     setSortField('name')
     setSortDir('asc')
     setError(null)
@@ -281,6 +285,64 @@ export function useImageStore() {
     setSortDir('desc')
     setImages((prev) => applySort(prev, 'elo', 'desc', eloScores))
   }, [eloScores])
+
+  // Tag actions
+  const addTagToSelected = useCallback(
+    (tag: string) => {
+      const trimmed = tag.trim().replace(/,/g, '')
+      if (!trimmed) return
+      setDraftTags((prev) => {
+        const next = new Map(prev)
+        for (const id of selectedIds) {
+          const img = images.find((i) => i.id === id)
+          if (!img) continue
+          const current = next.get(id) ?? img.tags
+          if (!current.includes(trimmed)) next.set(id, [...current, trimmed])
+        }
+        return next
+      })
+    },
+    [selectedIds, images]
+  )
+
+  const removeTagFromSelected = useCallback(
+    (tag: string) => {
+      setDraftTags((prev) => {
+        const next = new Map(prev)
+        for (const id of selectedIds) {
+          const img = images.find((i) => i.id === id)
+          if (!img) continue
+          const current = next.get(id) ?? img.tags
+          next.set(id, current.filter((t) => t !== tag))
+        }
+        return next
+      })
+    },
+    [selectedIds, images]
+  )
+
+  const saveTags = useCallback(async () => {
+    if (draftTags.size === 0) return
+    setIsWorking(true)
+    try {
+      const saves = [...draftTags.entries()].map(([imgId, tags]) => ({imagePath: imgId, tags}))
+      const result = await window.api.saveTags(saves)
+      setImages((prev) =>
+        prev.map((img) => {
+          const saved = draftTags.get(img.id)
+          return saved !== undefined ? {...img, tags: saved} : img
+        })
+      )
+      setDraftTags(new Map())
+      if (!result.ok) {
+        setError(`Failed to save tags for ${result.errors.length} file(s).`)
+      }
+    } catch {
+      setError('Failed to save tags.')
+    } finally {
+      setIsWorking(false)
+    }
+  }, [draftTags])
 
   const renameAll = useCallback(
     async (baseName: string) => {
@@ -329,6 +391,14 @@ export function useImageStore() {
           prev.forEach((score, id) => {
             const mapped = pathMap.get(id)
             next.set(mapped ? mapped.newPath : id, score)
+          })
+          return next
+        })
+        setDraftTags((prev) => {
+          const next = new Map<string, string[]>()
+          prev.forEach((tags, id) => {
+            const mapped = pathMap.get(id)
+            next.set(mapped ? mapped.newPath : id, tags)
           })
           return next
         })
@@ -382,6 +452,11 @@ export function useImageStore() {
     recordComparison,
     recordSkip,
     applyEloSort,
-    renameAll
+    renameAll,
+    draftTags,
+    hasPendingTags: draftTags.size > 0,
+    addTagToSelected,
+    removeTagFromSelected,
+    saveTags
   }
 }

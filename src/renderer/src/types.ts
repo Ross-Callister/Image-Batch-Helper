@@ -4,6 +4,7 @@ export interface ImageItem {
   path: string
   mtime: number
   birthtime: number
+  tags: string[]
 }
 
 export type SortField = 'name' | 'mtime' | 'birthtime' | 'custom' | 'elo'
@@ -25,6 +26,7 @@ declare global {
       renameImages: (
         renames: Array<{oldPath: string, newName: string}>
       ) => Promise<Array<{oldPath: string, newName: string, newPath: string, ok: boolean, error?: string}>>
+      saveTags: (saves: Array<{imagePath: string, tags: string[]}>) => Promise<IpcResult>
     }
   }
 }
