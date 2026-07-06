@@ -50,6 +50,21 @@
   flex-shrink: 0;
 }
 
+.filterBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 .toggleBtn {
   background: none;
   color: var(--text2);
@@ -138,6 +153,83 @@
 
 .chipDel:disabled {
   opacity: 0.4;
+}
+
+/* Filter chip variants */
+.chipFilter {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
+
+.chipFilter.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.1s;
+}
+
+.chipFilter:hover .chipLabel {
+  color: var(--text);
+}
+
+.chipFilter:hover {
+  border-color: var(--text2);
+}
+
+.chipInclude {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.4) !important;
+}
+
+.chipInclude .chipLabel {
+  color: #22c55e !important;
+}
+
+.chipExclude {
+  background: var(--danger-dim) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+.chipExclude .chipLabel {
+  color: var(--danger) !important;
+}
+
+.chipCount {
+  font-size: 10px;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+.chipInclude .chipCount {
+  color: rgba(34, 197, 94, 0.7);
+}
+
+.chipExclude .chipCount {
+  color: rgba(239, 68, 68, 0.7);
+}
+
+.clearFiltersBtn {
+  width: 100%;
+  padding: 6px 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.clearFiltersBtn:hover {
+  background: var(--surface3);
+  color: var(--text);
 }
 
 /* Add tag row */

@@ -11,8 +11,8 @@ import styles from './App.module.css'
 export default function App() {
   const store = useImageStore()
 
-  const modalImage = store.modalImageId ? store.images.find((i) => i.id === store.modalImageId) ?? null : null
-  const modalIdx = store.modalImageId ? store.images.findIndex((i) => i.id === store.modalImageId) : -1
+  const modalImage = store.modalImageId ? store.filteredImages.find((i) => i.id === store.modalImageId) ?? null : null
+  const modalIdx = store.modalImageId ? store.filteredImages.findIndex((i) => i.id === store.modalImageId) : -1
 
   const handleDrop = useCallback(
     (paths: string[]) => {
@@ -38,13 +38,16 @@ export default function App() {
             draftTags={store.draftTags}
             hasPendingTags={store.hasPendingTags}
             isWorking={store.isWorking}
+            tagFilters={store.tagFilters}
             onAddTag={store.addTagToSelected}
             onRemoveTag={store.removeTagFromSelected}
             onSaveTags={store.saveTags}
+            onCycleFilter={store.cycleTagFilter}
+            onClearFilters={store.clearTagFilters}
           />
           <main className={styles.main}>
             <ImageGrid
-              images={store.images}
+              images={store.filteredImages}
               selectedIds={store.selectedIds}
               culledIds={store.culledIds}
               sortField={store.sortField}
@@ -56,7 +59,7 @@ export default function App() {
             />
           </main>
           <Toolbar
-            totalCount={store.images.length}
+            totalCount={store.filteredImages.length}
             selectedCount={store.selectedIds.size}
             culledCount={store.culledIds.size}
             sortField={store.sortField}
@@ -89,7 +92,7 @@ export default function App() {
 
       <RankingSession
         isOpen={store.isRanking}
-        images={store.images}
+        images={store.filteredImages}
         eloScores={store.eloScores}
         onClose={store.stopRanking}
         onComparison={store.recordComparison}

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import type { ImageItem, SortField, SortDir } from './types'
 
@@ -61,6 +61,19 @@ export function useImageStore() {
   const [isRanking, setIsRanking] = useState(false)
   // Keys are image ids (paths); values are the working tag list (unsaved edits)
   const [draftTags, setDraftTags] = useState<Map<string, string[]>>(new Map())
+  const [tagFilters, setTagFilters] = useState<Map<string, 'include' | 'exclude'>>(new Map())
+
+  const filteredImages = useMemo(() => {
+    if (tagFilters.size === 0) return images
+    return images.filter((img) => {
+      const tags = draftTags.get(img.id) ?? img.tags
+      for (const [tag, mode] of tagFilters) {
+        if (mode === 'include' && !tags.includes(tag)) return false
+        if (mode === 'exclude' && tags.includes(tag)) return false
+      }
+      return true
+    })
+  }, [images, tagFilters, draftTags])
 
   const loadImages = useCallback(
     async (paths: string[]) => {
@@ -83,6 +96,7 @@ export function useImageStore() {
         setModalImageId(null)
         setEloScores(new Map())
         setDraftTags(new Map())
+        setTagFilters(new Map())
         setSortField(newSortField)
         setSortDir(newSortDir)
         setError(null)
@@ -97,7 +111,7 @@ export function useImageStore() {
     (id: string, ctrlKey: boolean, shiftKey: boolean) => {
       setSelectedIds((prev) => {
         if (shiftKey && lastClickedId) {
-          const ids = images.map((i) => i.id)
+          const ids = filteredImages.map((i) => i.id)
           const a = ids.indexOf(lastClickedId)
           const b = ids.indexOf(id)
           if (a !== -1 && b !== -1) {
@@ -118,7 +132,7 @@ export function useImageStore() {
       })
       setLastClickedId(id)
     },
-    [images, lastClickedId]
+    [filteredImages, lastClickedId]
   )
 
   const openModal = useCallback((id: string) => {
@@ -132,14 +146,14 @@ export function useImageStore() {
   const navigateModal = useCallback(
     (dir: 'prev' | 'next') => {
       if (!modalImageId) return
-      const idx = images.findIndex((i) => i.id === modalImageId)
+      const idx = filteredImages.findIndex((i) => i.id === modalImageId)
       if (idx === -1) return
       const next = dir === 'prev' ? idx - 1 : idx + 1
-      if (next >= 0 && next < images.length) {
-        setModalImageId(images[next].id)
+      if (next >= 0 && next < filteredImages.length) {
+        setModalImageId(filteredImages[next].id)
       }
     },
-    [images, modalImageId]
+    [filteredImages, modalImageId]
   )
 
   const setSort = useCallback(
@@ -216,13 +230,14 @@ export function useImageStore() {
   }, [culledIds])
 
   const touchAll = useCallback(async () => {
-    if (images.length === 0) return
+    if (filteredImages.length === 0) return
     setIsWorking(true)
     try {
-      const paths = images.map((i) => i.path)
+      const paths = filteredImages.map((i) => i.path)
       const result = await window.api.touchImages(paths)
       const now = Date.now()
-      setImages((prev) => prev.map((i) => ({ ...i, mtime: now })))
+      const touchedSet = new Set(paths)
+      setImages((prev) => prev.map((i) => (touchedSet.has(i.path) ? { ...i, mtime: now } : i)))
       if (!result.ok) {
         setError(`Failed to touch ${result.errors.length} file(s).`)
       }
@@ -231,7 +246,7 @@ export function useImageStore() {
     } finally {
       setIsWorking(false)
     }
-  }, [images])
+  }, [filteredImages])
 
   const clearView = useCallback(() => {
     setImages([])
@@ -241,6 +256,7 @@ export function useImageStore() {
     setModalImageId(null)
     setEloScores(new Map())
     setDraftTags(new Map())
+    setTagFilters(new Map())
     setSortField('name')
     setSortDir('asc')
     setError(null)
@@ -249,8 +265,8 @@ export function useImageStore() {
   const dismissError = useCallback(() => setError(null), [])
 
   const selectAll = useCallback(() => {
-    setSelectedIds(new Set(images.map((i) => i.id)))
-  }, [images])
+    setSelectedIds(new Set(filteredImages.map((i) => i.id)))
+  }, [filteredImages])
 
   const selectNone = useCallback(() => {
     setSelectedIds(new Set())
@@ -260,13 +276,13 @@ export function useImageStore() {
   const startRanking = useCallback(() => {
     setEloScores((prev) => {
       const next = new Map(prev)
-      images.forEach((img) => {
+      filteredImages.forEach((img) => {
         if (!next.has(img.id)) next.set(img.id, ELO_DEFAULT)
       })
       return next
     })
     setIsRanking(true)
-  }, [images])
+  }, [filteredImages])
 
   const stopRanking = useCallback(() => {
     setIsRanking(false)
@@ -344,14 +360,29 @@ export function useImageStore() {
     }
   }, [draftTags])
 
+  const cycleTagFilter = useCallback((tag: string) => {
+    setTagFilters((prev) => {
+      const next = new Map(prev)
+      const current = next.get(tag)
+      if (!current) next.set(tag, 'include')
+      else if (current === 'include') next.set(tag, 'exclude')
+      else next.delete(tag)
+      return next
+    })
+  }, [])
+
+  const clearTagFilters = useCallback(() => {
+    setTagFilters(new Map())
+  }, [])
+
   const renameAll = useCallback(
     async (baseName: string) => {
-      if (images.length === 0 || !baseName.trim()) return
+      if (filteredImages.length === 0 || !baseName.trim()) return
       setIsWorking(true)
       try {
-        const count = images.length
+        const count = filteredImages.length
         const digits = Math.max(3, String(count).length)
-        const renames = images.map((img, idx) => {
+        const renames = filteredImages.map((img, idx) => {
           const dotIdx = img.name.lastIndexOf('.')
           const ext = dotIdx !== -1 ? img.name.slice(dotIdx) : ''
           const num = String(idx + 1).padStart(digits, '0')
@@ -418,7 +449,7 @@ export function useImageStore() {
         setIsWorking(false)
       }
     },
-    [images]
+    [filteredImages]
   )
 
   return {
@@ -457,6 +488,10 @@ export function useImageStore() {
     hasPendingTags: draftTags.size > 0,
     addTagToSelected,
     removeTagFromSelected,
-    saveTags
+    saveTags,
+    filteredImages,
+    tagFilters,
+    cycleTagFilter,
+    clearTagFilters
   }
 }
