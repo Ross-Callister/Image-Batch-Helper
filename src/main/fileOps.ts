@@ -133,4 +133,48 @@ export function registerIpcHandlers(): void {
     })
     return result.response === 0
   })
+
+  ipcMain.handle('dialog:selectFolder', async () => {
+    const win = BrowserWindow.getFocusedWindow()
+    const result = await dialog.showOpenDialog(win!, {
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths[0]
+  })
+
+  ipcMain.handle('images:move', async (_event, paths: string[], destFolder: string) => {
+    const errors: string[] = []
+    const moved: Array<{oldPath: string, newPath: string}> = []
+    for (const p of paths) {
+      const dest = path.isAbsolute(destFolder) ? destFolder : path.resolve(path.dirname(p), destFolder)
+      const newPath = path.join(dest, path.basename(p))
+      try {
+        await fs.promises.mkdir(dest, { recursive: true })
+        try {
+          await fs.promises.rename(p, newPath)
+        } catch (e: any) {
+          if (e.code === 'EXDEV') {
+            await fs.promises.copyFile(p, newPath)
+            await fs.promises.unlink(p)
+          } else {
+            throw e
+          }
+        }
+        // Move sidecar tag file if present
+        const tagPath = path.join(path.dirname(p), path.basename(p, path.extname(p)) + '.txt')
+        if (fs.existsSync(tagPath)) {
+          const newTagPath = path.join(dest, path.basename(p, path.extname(p)) + '.txt')
+          try {
+            await fs.promises.rename(tagPath, newTagPath)
+          } catch { /* ignore sidecar move failure */ }
+        }
+        moved.push({ oldPath: p, newPath })
+      } catch (e) {
+        errors.push(p)
+        console.error('Error moving:', p, '->', newPath, e)
+      }
+    }
+    return { ok: errors.length === 0, errors, moved }
+  })
 }

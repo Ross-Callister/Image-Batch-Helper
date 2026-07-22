@@ -9,6 +9,7 @@ export interface ImageItem {
 
 export type SortField = 'name' | 'mtime' | 'birthtime' | 'custom' | 'elo'
 export type SortDir = 'asc' | 'desc'
+export type KeepTossDecision = 'keep' | 'toss'
 
 export interface IpcResult {
   ok: boolean
@@ -27,6 +28,11 @@ declare global {
         renames: Array<{oldPath: string, newName: string}>
       ) => Promise<Array<{oldPath: string, newName: string, newPath: string, ok: boolean, error?: string}>>
       saveTags: (saves: Array<{imagePath: string, tags: string[]}>) => Promise<IpcResult>
+      selectFolder: () => Promise<string | null>
+      moveImages: (
+        paths: string[],
+        destFolder: string
+      ) => Promise<{ok: boolean, errors: string[], moved: Array<{oldPath: string, newPath: string}>}>
     }
   }
 }

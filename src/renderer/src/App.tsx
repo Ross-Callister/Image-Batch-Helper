@@ -3,6 +3,7 @@ import { useImageStore } from './store'
 import DropZone from './components/DropZone'
 import ImageGrid from './components/ImageGrid'
 import ImageModal from './components/ImageModal'
+import KeepTossSession from './components/KeepTossSession'
 import RankingSession from './components/RankingSession'
 import TagPanel from './components/TagPanel'
 import Toolbar from './components/Toolbar'
@@ -76,6 +77,7 @@ export default function App() {
             onSelectNone={store.selectNone}
             onClearView={store.clearView}
             onStartRanking={store.startRanking}
+            onStartKeepToss={store.startKeepToss}
             onRenameAll={store.renameAll}
             onDismissError={store.dismissError}
           />
@@ -98,6 +100,19 @@ export default function App() {
         onComparison={store.recordComparison}
         onSkip={store.recordSkip}
         onApplySort={handleApplySort}
+      />
+
+      <KeepTossSession
+        isOpen={store.isKeepToss}
+        images={store.filteredImages}
+        decisions={store.keepTossDecisions}
+        isWorking={store.isWorking}
+        onDecide={store.decideKeepToss}
+        onUndo={store.undoKeepToss}
+        onClose={store.stopKeepToss}
+        onDeleteTossed={store.deleteTossed}
+        onMoveKept={store.moveKept}
+        onReset={store.resetKeepToss}
       />
     </div>
   )

@@ -15,5 +15,10 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('images:rename', renames),
 
   saveTags: (saves: Array<{imagePath: string, tags: string[]}>) =>
-    ipcRenderer.invoke('tags:save', saves)
+    ipcRenderer.invoke('tags:save', saves),
+
+  selectFolder: () => ipcRenderer.invoke('dialog:selectFolder'),
+
+  moveImages: (paths: string[], destFolder: string) =>
+    ipcRenderer.invoke('images:move', paths, destFolder)
 })

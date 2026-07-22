@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
-import type { ImageItem, SortField, SortDir } from './types'
+import type { ImageItem, SortField, SortDir, KeepTossDecision } from './types'
 
 const ELO_K = 64
 const ELO_DEFAULT = 1000
@@ -59,6 +59,8 @@ export function useImageStore() {
   const [isWorking, setIsWorking] = useState(false)
   const [eloScores, setEloScores] = useState<Map<string, number>>(new Map())
   const [isRanking, setIsRanking] = useState(false)
+  const [isKeepToss, setIsKeepToss] = useState(false)
+  const [keepTossDecisions, setKeepTossDecisions] = useState<Map<string, KeepTossDecision>>(new Map())
   // Keys are image ids (paths); values are the working tag list (unsaved edits)
   const [draftTags, setDraftTags] = useState<Map<string, string[]>>(new Map())
   const [tagFilters, setTagFilters] = useState<Map<string, 'include' | 'exclude'>>(new Map())
@@ -97,6 +99,8 @@ export function useImageStore() {
         setEloScores(new Map())
         setDraftTags(new Map())
         setTagFilters(new Map())
+        setKeepTossDecisions(new Map())
+        setIsKeepToss(false)
         setSortField(newSortField)
         setSortDir(newSortDir)
         setError(null)
@@ -257,6 +261,8 @@ export function useImageStore() {
     setEloScores(new Map())
     setDraftTags(new Map())
     setTagFilters(new Map())
+    setKeepTossDecisions(new Map())
+    setIsKeepToss(false)
     setSortField('name')
     setSortDir('asc')
     setError(null)
@@ -301,6 +307,99 @@ export function useImageStore() {
     setSortDir('desc')
     setImages((prev) => applySort(prev, 'elo', 'desc', eloScores))
   }, [eloScores])
+
+  // Keep/toss actions
+  const startKeepToss = useCallback(() => {
+    setIsKeepToss(true)
+  }, [])
+
+  const stopKeepToss = useCallback(() => {
+    setIsKeepToss(false)
+  }, [])
+
+  const decideKeepToss = useCallback((id: string, decision: KeepTossDecision) => {
+    setKeepTossDecisions((prev) => {
+      const next = new Map(prev)
+      next.set(id, decision)
+      return next
+    })
+  }, [])
+
+  const undoKeepToss = useCallback((id: string) => {
+    setKeepTossDecisions((prev) => {
+      const next = new Map(prev)
+      next.delete(id)
+      return next
+    })
+  }, [])
+
+  const resetKeepToss = useCallback(() => {
+    setKeepTossDecisions(new Map())
+  }, [])
+
+  const deleteTossed = useCallback(async () => {
+    const tossedIds = [...keepTossDecisions.entries()].filter(([, d]) => d === 'toss').map(([id]) => id)
+    if (tossedIds.length === 0) return
+    setIsWorking(true)
+    try {
+      const result = await window.api.trashImages(tossedIds)
+      const deleted = new Set(tossedIds.filter((p) => !result.errors.includes(p)))
+      setImages((prev) => prev.filter((i) => !deleted.has(i.id)))
+      setKeepTossDecisions((prev) => {
+        const next = new Map(prev)
+        deleted.forEach((p) => next.delete(p))
+        return next
+      })
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        deleted.forEach((p) => next.delete(p))
+        return next
+      })
+      if (!result.ok) {
+        setError(`Failed to delete ${result.errors.length} file(s). They remain marked.`)
+      }
+    } catch {
+      setError('Failed to move files to recycle bin.')
+    } finally {
+      setIsWorking(false)
+    }
+  }, [keepTossDecisions])
+
+  const moveKept = useCallback(
+    async (destFolder: string) => {
+      const keptIds = [...keepTossDecisions.entries()].filter(([, d]) => d === 'keep').map(([id]) => id)
+      if (keptIds.length === 0 || !destFolder.trim()) return
+      setIsWorking(true)
+      try {
+        const result = await window.api.moveImages(keptIds, destFolder.trim())
+        const movedMap = new Map(result.moved.map((m) => [m.oldPath, m.newPath]))
+        setImages((prev) =>
+          prev.map((img) => {
+            const newPath = movedMap.get(img.id)
+            return newPath ? { ...img, id: newPath, path: newPath } : img
+          })
+        )
+        setKeepTossDecisions((prev) => {
+          const next = new Map(prev)
+          movedMap.forEach((_newPath, oldPath) => next.delete(oldPath))
+          return next
+        })
+        setSelectedIds((prev) => {
+          const next = new Set<string>()
+          prev.forEach((id) => next.add(movedMap.get(id) ?? id))
+          return next
+        })
+        if (!result.ok) {
+          setError(`Failed to move ${result.errors.length} file(s).`)
+        }
+      } catch {
+        setError('Failed to move files.')
+      } finally {
+        setIsWorking(false)
+      }
+    },
+    [keepTossDecisions]
+  )
 
   // Tag actions
   const addTagToSelected = useCallback(
@@ -433,6 +532,14 @@ export function useImageStore() {
           })
           return next
         })
+        setKeepTossDecisions((prev) => {
+          const next = new Map<string, KeepTossDecision>()
+          prev.forEach((decision, id) => {
+            const mapped = pathMap.get(id)
+            next.set(mapped ? mapped.newPath : id, decision)
+          })
+          return next
+        })
         setModalImageId((prev) => {
           if (!prev) return prev
           const mapped = pathMap.get(prev)
@@ -483,6 +590,15 @@ export function useImageStore() {
     recordComparison,
     recordSkip,
     applyEloSort,
+    isKeepToss,
+    keepTossDecisions,
+    startKeepToss,
+    stopKeepToss,
+    decideKeepToss,
+    undoKeepToss,
+    resetKeepToss,
+    deleteTossed,
+    moveKept,
     renameAll,
     draftTags,
     hasPendingTags: draftTags.size > 0,

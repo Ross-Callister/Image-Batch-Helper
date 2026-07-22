@@ -19,6 +19,7 @@ interface Props {
   onSelectNone: () => void
   onClearView: () => void
   onStartRanking: () => void
+  onStartKeepToss: () => void
   onRenameAll: (baseName: string) => void
   eloCount: number
   onDismissError: () => void
@@ -69,6 +70,7 @@ export default function Toolbar({
   onSelectNone,
   onClearView,
   onStartRanking,
+  onStartKeepToss,
   onRenameAll,
   eloCount,
   onDismissError
@@ -184,6 +186,15 @@ export default function Toolbar({
           title="Open pairwise comparison session to rank images by quality"
         >
           Start Ranking
+        </button>
+
+        <button
+          className={styles.actionBtn}
+          onClick={onStartKeepToss}
+          disabled={totalCount === 0 || isWorking}
+          title="Go through images one by one, keeping or tossing each (← toss, → keep)"
+        >
+          Start Keep/Toss
         </button>
       </div>
 
