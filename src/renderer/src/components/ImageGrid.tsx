@@ -9,7 +9,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import ImageCard from './ImageCard'
-import type { ImageItem, SortField } from '../types'
+import type { ImageItem, SortField } from '../model/types'
 import styles from './ImageGrid.module.css'
 
 interface Props {

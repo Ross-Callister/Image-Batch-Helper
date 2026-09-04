@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import type { ImageItem } from '../types'
+import { commonTags, countTags, type TagFilterMode } from './tagSelectors'
+import type { ImageItem } from '../../model/types'
 import styles from './TagPanel.module.css'
 
 interface Props {
@@ -8,16 +9,12 @@ interface Props {
   draftTags: Map<string, string[]>
   hasPendingTags: boolean
   isWorking: boolean
-  tagFilters: Map<string, 'include' | 'exclude'>
+  tagFilters: Map<string, TagFilterMode>
   onAddTag: (tag: string) => void
   onRemoveTag: (tag: string) => void
   onSaveTags: () => void
   onCycleFilter: (tag: string) => void
   onClearFilters: () => void
-}
-
-function effectiveTags(img: ImageItem, drafts: Map<string, string[]>): string[] {
-  return drafts.get(img.id) ?? img.tags
 }
 
 export default function TagPanel({
@@ -49,13 +46,7 @@ export default function TagPanel({
   // ── "All images" view (nothing selected) ──────────────────────────────────
   if (selected.length === 0) {
     // Collect tag counts across all images using effective (draft-aware) tags
-    const counts = new Map<string, number>()
-    for (const img of images) {
-      for (const tag of effectiveTags(img, draftTags)) {
-        counts.set(tag, (counts.get(tag) ?? 0) + 1)
-      }
-    }
-    const sortedTags = [...counts.entries()].sort((a, b) => b[1] - a[1])
+    const sortedTags = countTags(images, draftTags)
 
     return (
       <div className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}>
@@ -119,15 +110,7 @@ export default function TagPanel({
   }
 
   // ── Selection view ─────────────────────────────────────────────────────────
-  let displayTags: string[] = []
-  if (selected.length === 1) {
-    displayTags = effectiveTags(selected[0], draftTags)
-  } else {
-    const first = effectiveTags(selected[0], draftTags)
-    displayTags = first.filter((tag) =>
-      selected.every((img) => effectiveTags(img, draftTags).includes(tag))
-    )
-  }
+  const displayTags = commonTags(selected, draftTags)
 
   return (
     <div className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}>

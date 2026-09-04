@@ -1,16 +1,10 @@
-import { app, BrowserWindow, shell, protocol } from 'electron'
-import { join, extname } from 'path'
-import { readFile } from 'fs/promises'
+import { app, BrowserWindow, shell } from 'electron'
+import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { registerIpcHandlers } from './fileOps'
+import { registerIpcHandlers } from './ipc/registerHandlers'
+import { handleLocalFiles, registerLocalFileScheme } from './localFileProtocol'
 
-// Must be called before app.ready
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'localfile',
-    privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true }
-  }
-])
+registerLocalFileScheme()
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -52,33 +46,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  const MIME: Record<string, string> = {
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.png': 'image/png',
-    '.webp': 'image/webp',
-    '.gif': 'image/gif'
-  }
-
-  // Serve local image files through a custom protocol.
-  // Chromium (standard: true) normalises localfile:///D:/foo to localfile://d/foo,
-  // treating the Windows drive letter as the URL hostname. Reconstruct accordingly.
-  protocol.handle('localfile', async (request) => {
-    try {
-      const parsed = new URL(request.url)
-      const filePath = decodeURIComponent(
-        parsed.hostname
-          ? parsed.hostname.toUpperCase() + ':' + parsed.pathname
-          : parsed.pathname
-      )
-      const data = await readFile(filePath)
-      const mime = MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream'
-      return new Response(data, { headers: { 'Content-Type': mime } })
-    } catch (e) {
-      console.error('[localfile] error:', e)
-      return new Response('Not found', { status: 404 })
-    }
-  })
+  handleLocalFiles()
 
   registerIpcHandlers()
   createWindow()

@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import type { ImageItem } from '../types'
+import { createRankingPairs, type RankingPair } from './rankingPairs'
+import { ELO_DEFAULT } from '../../model/elo'
+import type { ImageItem } from '../../model/types'
+import { toLocalFileUrl } from '../../utils/localFileUrl'
 import styles from './RankingSession.module.css'
+import sessionStyles from '../../styles/fullScreenSession.module.css'
 
 interface Props {
   isOpen: boolean
@@ -11,19 +15,6 @@ interface Props {
   onComparison: (winnerId: string, loserId: string) => void
   onSkip: (aId: string, bId: string) => void
   onApplySort: () => void
-}
-
-function toLocalFileUrl(filePath: string): string {
-  return 'localfile:///' + encodeURI(filePath.replace(/\\/g, '/'))
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 export default function RankingSession({
@@ -38,15 +29,9 @@ export default function RankingSession({
   const [currentIndex, setCurrentIndex] = useState(0)
 
   // Generate shuffled pair list once when session opens
-  const pairs = useMemo<Array<[string, string]>>(() => {
+  const pairs = useMemo<RankingPair[]>(() => {
     if (!isOpen || images.length < 2) return []
-    const all: Array<[string, string]> = []
-    for (let i = 0; i < images.length; i++) {
-      for (let j = i + 1; j < images.length; j++) {
-        all.push([images[i].id, images[j].id])
-      }
-    }
-    return shuffle(all)
+    return createRankingPairs(images.map((image) => image.id))
   }, [isOpen, images])
 
   // Reset index when a new session opens
@@ -79,7 +64,7 @@ export default function RankingSession({
   const pct = Math.min(100, Math.round((currentIndex / estimated) * 100))
 
   const leaderboard = [...images]
-    .sort((a, b) => (eloScores.get(b.id) ?? 1000) - (eloScores.get(a.id) ?? 1000))
+    .sort((a, b) => (eloScores.get(b.id) ?? ELO_DEFAULT) - (eloScores.get(a.id) ?? ELO_DEFAULT))
     .slice(0, 10)
 
   const pick = (winner: string, loser: string) => {
@@ -102,28 +87,28 @@ export default function RankingSession({
   }
 
   return createPortal(
-    <div className={styles.backdrop}>
-      <div className={styles.session}>
+    <div className={sessionStyles.backdrop}>
+      <div className={sessionStyles.session}>
         {/* Top bar */}
-        <div className={styles.topBar}>
-          <span className={styles.topTitle}>Ranking session</span>
-          <div className={styles.progressWrap}>
+        <div className={sessionStyles.topBar}>
+          <span className={sessionStyles.topTitle}>Ranking session</span>
+          <div className={sessionStyles.progressWrap}>
             <div className={styles.progressBar} style={{ width: `${pct}%` }} />
           </div>
-          <span className={styles.progressLabel}>
+          <span className={sessionStyles.progressLabel}>
             {currentIndex} / ~{estimated} comparisons
           </span>
-          <div className={styles.topSep} />
+          <div className={sessionStyles.topSep} />
           <button className={styles.applyBtn} onClick={onApplySort}>
             Apply ranking sort
           </button>
-          <button className={styles.exitBtn} onClick={onClose}>
+          <button className={sessionStyles.exitBtn} onClick={onClose}>
             Exit
           </button>
         </div>
 
         {/* Main area */}
-        <div className={styles.body}>
+        <div className={sessionStyles.body}>
           {done ? (
             <div className={styles.doneArea}>
               <div className={styles.doneIcon}>
@@ -149,7 +134,7 @@ export default function RankingSession({
                 </div>
                 <div className={styles.imgMeta}>
                   <span className={styles.imgName}>{leftItem?.name}</span>
-                  <span className={styles.imgScore}>{eloScores.get(leftItem?.id ?? '') ?? 1000}</span>
+                  <span className={styles.imgScore}>{eloScores.get(leftItem?.id ?? '') ?? ELO_DEFAULT}</span>
                 </div>
               </div>
 
@@ -163,7 +148,7 @@ export default function RankingSession({
                 </div>
                 <div className={styles.imgMeta}>
                   <span className={styles.imgName}>{rightItem?.name}</span>
-                  <span className={styles.imgScore}>{eloScores.get(rightItem?.id ?? '') ?? 1000}</span>
+                  <span className={styles.imgScore}>{eloScores.get(rightItem?.id ?? '') ?? ELO_DEFAULT}</span>
                 </div>
               </div>
             </>
@@ -186,7 +171,7 @@ export default function RankingSession({
                 <div key={img.id} className={styles.leaderRow}>
                   <span className={styles.leaderRank}>{idx + 1}</span>
                   <span className={styles.leaderName}>{img.name}</span>
-                  <span className={styles.leaderScore}>{eloScores.get(img.id) ?? 1000}</span>
+                  <span className={styles.leaderScore}>{eloScores.get(img.id) ?? ELO_DEFAULT}</span>
                 </div>
               ))}
             </div>

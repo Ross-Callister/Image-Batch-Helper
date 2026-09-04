@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import type { ImageItem } from '../types'
+import type { ImageItem } from '../model/types'
+import { toLocalFileUrl } from '../utils/localFileUrl'
 import styles from './ImageModal.module.css'
 
 interface Props {
@@ -25,7 +26,7 @@ export default function ImageModal({ image, hasPrev, hasNext, onClose, onNavigat
 
   if (!image) return null
 
-  const localFileUrl = 'localfile:///' + encodeURI(image.path.replace(/\\/g, '/'))
+  const localFileUrl = toLocalFileUrl(image.path)
 
   return createPortal(
     <div className={styles.backdrop} onClick={onClose}>

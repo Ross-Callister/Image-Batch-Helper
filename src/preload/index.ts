@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import type { ImageBatchApi } from './apiTypes'
 
-contextBridge.exposeInMainWorld('api', {
+const api: ImageBatchApi = {
   getPathForFile: (file: File): string => webUtils.getPathForFile(file),
 
   loadImages: (paths: string[]) => ipcRenderer.invoke('images:load', paths),
@@ -21,4 +22,6 @@ contextBridge.exposeInMainWorld('api', {
 
   moveImages: (paths: string[], destFolder: string) =>
     ipcRenderer.invoke('images:move', paths, destFolder)
-})
+}
+
+contextBridge.exposeInMainWorld('api', api)

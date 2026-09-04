@@ -1,16 +1,16 @@
 import React, { useCallback } from 'react'
-import { useImageStore } from './store'
+import { useImageWorkspace } from './model/useImageWorkspace'
 import DropZone from './components/DropZone'
 import ImageGrid from './components/ImageGrid'
 import ImageModal from './components/ImageModal'
-import KeepTossSession from './components/KeepTossSession'
-import RankingSession from './components/RankingSession'
-import TagPanel from './components/TagPanel'
-import Toolbar from './components/Toolbar'
+import KeepTossSession from './features/keepToss/KeepTossSession'
+import RankingSession from './features/ranking/RankingSession'
+import TagPanel from './features/tags/TagPanel'
+import Toolbar from './features/toolbar/Toolbar'
 import styles from './App.module.css'
 
 export default function App() {
-  const store = useImageStore()
+  const store = useImageWorkspace()
 
   const modalImage = store.modalImageId ? store.filteredImages.find((i) => i.id === store.modalImageId) ?? null : null
   const modalIdx = store.modalImageId ? store.filteredImages.findIndex((i) => i.id === store.modalImageId) : -1

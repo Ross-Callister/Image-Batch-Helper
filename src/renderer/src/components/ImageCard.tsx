@@ -1,7 +1,8 @@
 import React from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { ImageItem } from '../types'
+import type { ImageItem } from '../model/types'
+import { toLocalFileUrl } from '../utils/localFileUrl'
 import styles from './ImageCard.module.css'
 
 interface Props {
@@ -41,7 +42,7 @@ export default function ImageCard({
     onDoubleClick(item.id)
   }
 
-  const localFileUrl = 'localfile:///' + encodeURI(item.path.replace(/\\/g, '/'))
+  const localFileUrl = toLocalFileUrl(item.path)
 
   return (
     <div

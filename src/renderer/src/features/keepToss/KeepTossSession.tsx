@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import type { ImageItem, KeepTossDecision } from '../types'
+import type { ImageItem, KeepTossDecision } from '../../model/types'
+import { toLocalFileUrl } from '../../utils/localFileUrl'
 import styles from './KeepTossSession.module.css'
+import sessionStyles from '../../styles/fullScreenSession.module.css'
 
 interface Props {
   isOpen: boolean
@@ -14,10 +16,6 @@ interface Props {
   onDeleteTossed: () => Promise<void>
   onMoveKept: (destFolder: string) => Promise<void>
   onReset: () => void
-}
-
-function toLocalFileUrl(filePath: string): string {
-  return 'localfile:///' + encodeURI(filePath.replace(/\\/g, '/'))
 }
 
 export default function KeepTossSession({
@@ -158,17 +156,17 @@ export default function KeepTossSession({
   )
 
   return createPortal(
-    <div className={styles.backdrop}>
-      <div className={styles.session}>
-        <div className={styles.topBar}>
-          <span className={styles.topTitle}>Keep / Toss</span>
-          <div className={styles.progressWrap}>
+    <div className={sessionStyles.backdrop}>
+      <div className={sessionStyles.session}>
+        <div className={sessionStyles.topBar}>
+          <span className={sessionStyles.topTitle}>Keep / Toss</span>
+          <div className={sessionStyles.progressWrap}>
             <div className={styles.progressBar} style={{ width: `${pct}%` }} />
           </div>
-          <span className={styles.progressLabel}>
+          <span className={sessionStyles.progressLabel}>
             {Math.min(currentIndex, images.length)} / {images.length}
           </span>
-          <div className={styles.topSep} />
+          <div className={sessionStyles.topSep} />
           {tossedCount > 0 && (
             <span className={`${styles.countBadge} ${styles.tossBadge}`}>{tossedCount} toss</span>
           )}
@@ -176,19 +174,19 @@ export default function KeepTossSession({
             <span className={`${styles.countBadge} ${styles.keepBadge}`}>{keptCount} keep</span>
           )}
           <button
-            className={styles.exitBtn}
+            className={sessionStyles.exitBtn}
             onClick={handleClear}
             disabled={!hasDecisions || isWorking}
             title="Clear all keep/toss marks and start over"
           >
             Clear marks
           </button>
-          <button className={styles.exitBtn} onClick={onClose}>
+          <button className={sessionStyles.exitBtn} onClick={onClose}>
             Exit
           </button>
         </div>
 
-        <div className={styles.body}>
+        <div className={sessionStyles.body}>
           {done ? (
             <div className={styles.doneArea}>
               <div className={styles.doneIcon}>
@@ -203,7 +201,7 @@ export default function KeepTossSession({
 
               {actionsPanel}
 
-              <button className={styles.exitBtn} style={{ marginTop: 18 }} onClick={onClose}>
+              <button className={sessionStyles.exitBtn} style={{ marginTop: 18 }} onClick={onClose}>
                 Exit session
               </button>
             </div>

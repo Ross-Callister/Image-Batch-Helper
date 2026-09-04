@@ -26,17 +26,19 @@ Built and tested on Windows. The app doesn't rely on Windows-only APIs, so it sh
 
 ## Project Structure
 
-```
+```text
 src/
-  main/         Electron main process (window creation, filesystem IPC handlers)
-  preload/      Context-bridge API exposed to the renderer
-  renderer/     React app (components, Zustand-style store, styles)
+  main/         Electron lifecycle, local-file protocol, and grouped IPC handlers
+  preload/      Typed context-bridge API exposed to the renderer
+  renderer/     React app, organized into model, general components, and features
+  shared/       Serializable IPC data and operation contracts
 ```
 
-Key files:
-- [src/main/fileOps.ts](src/main/fileOps.ts) — IPC handlers for loading, trashing, touching, renaming, moving images, and saving tag sidecar files
-- [src/renderer/src/store.ts](src/renderer/src/store.ts) — application state (selection, sort, cull, tags, ranking, keep/toss)
-- [src/renderer/src/App.tsx](src/renderer/src/App.tsx) — top-level layout wiring the store to components
+Key boundaries:
+- [src/main/ipc/](src/main/ipc/) — IPC handlers grouped by responsibility
+- [src/renderer/src/model/](src/renderer/src/model/) — workspace orchestration and image-domain transformations
+- [src/renderer/src/features/](src/renderer/src/features/) — tagging, ranking, keep/toss, and toolbar behavior
+- [src/renderer/src/App.tsx](src/renderer/src/App.tsx) — top-level composition of the workspace and feature UI
 
 ## Getting Started
 
@@ -48,9 +50,11 @@ npm run dev      # launch in development with hot reload
 ### Other scripts
 
 ```bash
-npm run build      # type-check and build for production
-npm run start       # preview the built app
-npm run build:win   # build and package a Windows installer (NSIS)
+npm test           # run characterization tests
+npm run typecheck  # type-check main, preload, shared, and renderer code
+npm run build      # build for production
+npm run start      # preview the built app
+npm run build:win  # build and package a Windows installer (NSIS)
 ```
 
 ## Notes
@@ -60,4 +64,4 @@ npm run build:win   # build and package a Windows installer (NSIS)
 
 ## Platform Support
 
-Developed and tested on Windows only. Nothing in the codebase is intentionally Windows-only — file paths use Node's `path` module and the custom `localfile://` protocol handler in [src/main/index.ts](src/main/index.ts) falls back to standard POSIX path handling when there's no Windows drive-letter hostname — but macOS/Linux are untested, and `package.json`'s `build` config only defines a `win`/NSIS packaging target. Adding `mac`/`linux` targets to `electron-builder` and verifying behavior there is open work.
+Developed and tested on Windows only. Nothing in the codebase is intentionally Windows-only — file paths use Node's `path` module and the custom `localfile://` protocol handler in [src/main/localFileProtocol.ts](src/main/localFileProtocol.ts) falls back to standard POSIX path handling when there's no Windows drive-letter hostname — but macOS/Linux are untested, and `package.json`'s `build` config only defines a `win`/NSIS packaging target. Adding `mac`/`linux` targets to `electron-builder` and verifying behavior there is open work.

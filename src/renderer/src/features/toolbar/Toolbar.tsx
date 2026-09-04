@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { SortField, SortDir } from '../types'
+import type { SortField, SortDir } from '../../model/types'
 import styles from './Toolbar.module.css'
 
 interface Props {
