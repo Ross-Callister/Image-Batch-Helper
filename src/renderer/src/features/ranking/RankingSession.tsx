@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { createRankingPairs, type RankingPair } from './rankingPairs'
 import { ELO_DEFAULT } from '../../model/elo'
 import type { ImageItem } from '../../model/types'
-import { toLocalFileUrl } from '../../utils/localFileUrl'
+import MediaView from '../../components/MediaView'
 import styles from './RankingSession.module.css'
 import sessionStyles from '../../styles/fullScreenSession.module.css'
 
@@ -127,7 +127,7 @@ export default function RankingSession({
               {/* Left image */}
               <div className={styles.side} onClick={() => leftItem && rightItem && pick(leftItem.id, rightItem.id)}>
                 <div className={styles.imgWrap}>
-                  {leftItem && <img src={toLocalFileUrl(leftItem.path)} alt={leftItem.name} draggable={false} />}
+                  {leftItem && <MediaView path={leftItem.path} name={leftItem.name} />}
                   <div className={styles.chooseHint}>
                     <span className={styles.keyHint}>←</span> Choose
                   </div>
@@ -141,7 +141,7 @@ export default function RankingSession({
               {/* Right image */}
               <div className={styles.side} onClick={() => leftItem && rightItem && pick(rightItem.id, leftItem.id)}>
                 <div className={styles.imgWrap}>
-                  {rightItem && <img src={toLocalFileUrl(rightItem.path)} alt={rightItem.name} draggable={false} />}
+                  {rightItem && <MediaView path={rightItem.path} name={rightItem.name} />}
                   <div className={`${styles.chooseHint} ${styles.chooseRight}`}>
                     Choose <span className={styles.keyHint}>→</span>
                   </div>

@@ -2,11 +2,10 @@ import { ipcMain, shell } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import type { ImageItem, RenameRequest, RenameResult } from '../../shared/ipcTypes'
-
-const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp'])
+import { isMediaPath } from '../../shared/mediaTypes'
 
 function isImageFile(filePath: string): boolean {
-  return IMAGE_EXTENSIONS.has(path.extname(filePath).toLowerCase())
+  return isMediaPath(filePath)
 }
 
 function scanDirectory(directoryPath: string): string[] {

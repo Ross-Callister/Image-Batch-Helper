@@ -71,7 +71,8 @@
   padding: 16px;
 }
 
-.imageWrap img {
+.imageWrap img,
+.imageWrap video {
   /* Constrain directly to viewport so the image is never cropped.
      80px accounts for the header (~46px) + vertical padding (32px). */
   max-width: calc(90vw - 32px);
