@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { ImageItem, KeepTossDecision } from '../../model/types'
-import { toLocalFileUrl } from '../../utils/localFileUrl'
+import MediaView from '../../components/MediaView'
 import styles from './KeepTossSession.module.css'
 import sessionStyles from '../../styles/fullScreenSession.module.css'
 
@@ -210,7 +210,7 @@ export default function KeepTossSession({
               <div className={styles.cardWrap}>
                 {current && (
                   <div key={current.id} className={`${styles.card} ${anim === 'keep' ? styles.cardKeep : ''} ${anim === 'toss' ? styles.cardToss : ''}`}>
-                    <img src={toLocalFileUrl(current.path)} alt={current.name} draggable={false} />
+                    <MediaView path={current.path} name={current.name} />
                     {anim === 'keep' && <div className={`${styles.stamp} ${styles.stampKeep}`}>KEEP</div>}
                     {anim === 'toss' && <div className={`${styles.stamp} ${styles.stampToss}`}>TOSS</div>}
                   </div>

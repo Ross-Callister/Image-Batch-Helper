@@ -55,7 +55,8 @@
   animation: cardIn 0.18s ease-out;
 }
 
-.card img {
+.card img,
+.card video {
   max-width: 100%;
   max-height: 70vh;
   width: auto;
@@ -65,6 +66,10 @@
   pointer-events: none;
   display: block;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.card video {
+  pointer-events: auto;
 }
 
 @keyframes cardIn {

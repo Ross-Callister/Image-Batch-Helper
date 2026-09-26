@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { ImageItem } from '../model/types'
-import { toLocalFileUrl } from '../utils/localFileUrl'
+import MediaView from './MediaView'
 import styles from './ImageModal.module.css'
 
 interface Props {
@@ -26,8 +26,6 @@ export default function ImageModal({ image, hasPrev, hasNext, onClose, onNavigat
 
   if (!image) return null
 
-  const localFileUrl = toLocalFileUrl(image.path)
-
   return createPortal(
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -48,7 +46,7 @@ export default function ImageModal({ image, hasPrev, hasNext, onClose, onNavigat
               </svg>
             </button>
           )}
-          <img src={localFileUrl} alt={image.name} draggable={false} />
+          <MediaView path={image.path} name={image.name} />
           {hasNext && (
             <button className={`${styles.navBtn} ${styles.next}`} onClick={() => onNavigate('next')} title="Next (→)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

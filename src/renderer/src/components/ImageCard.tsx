@@ -1,8 +1,9 @@
 import React from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { isVideoPath } from '../../../shared/mediaTypes'
 import type { ImageItem } from '../model/types'
-import { toLocalFileUrl } from '../utils/localFileUrl'
+import MediaView from './MediaView'
 import styles from './ImageCard.module.css'
 
 interface Props {
@@ -42,8 +43,6 @@ export default function ImageCard({
     onDoubleClick(item.id)
   }
 
-  const localFileUrl = toLocalFileUrl(item.path)
-
   return (
     <div
       ref={setNodeRef}
@@ -54,7 +53,14 @@ export default function ImageCard({
       {...(isDragEnabled ? { ...attributes, ...listeners } : {})}
     >
       <div className={styles.thumb}>
-        <img src={localFileUrl} alt={item.name} loading="lazy" decoding="async" draggable={false} />
+        <MediaView path={item.path} name={item.name} thumbnail />
+        {isVideoPath(item.path) && (
+          <div className={styles.videoBadge} title="Video">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5.5v13l11-6.5z" />
+            </svg>
+          </div>
+        )}
         {isCulled && (
           <div className={styles.cullOverlay}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
