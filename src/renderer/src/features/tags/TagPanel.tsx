@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { commonTags, countTags, type TagFilterMode } from './tagSelectors'
+import { countTags, selectionTags, type TagFilterMode } from './tagSelectors'
 import type { ImageItem } from '../../model/types'
 import styles from './TagPanel.module.css'
 
@@ -15,6 +15,35 @@ interface Props {
   onSaveTags: () => void
   onCycleFilter: (tag: string) => void
   onClearFilters: () => void
+}
+
+interface FilterTagChipProps {
+  name: string
+  count?: number
+  mode?: TagFilterMode
+  onCycle: (tag: string) => void
+}
+
+function FilterTagChip({ name, count, mode, onCycle }: FilterTagChipProps) {
+  const title = mode === 'include'
+    ? `Excluding "${name}" — click to remove filter`
+    : mode === 'exclude'
+      ? `Click to remove "${name}" filter`
+      : `Include only images with "${name}"`
+
+  return (
+    <button
+      className={`${styles.chip} ${styles.chipFilter} ${
+        mode === 'include' ? styles.chipInclude :
+        mode === 'exclude' ? styles.chipExclude : ''
+      }`}
+      onClick={() => onCycle(name)}
+      title={title}
+    >
+      <span className={styles.chipLabel}>{name}</span>
+      {count !== undefined && <span className={styles.chipCount}>{count}</span>}
+    </button>
+  )
 }
 
 export default function TagPanel({
@@ -77,22 +106,13 @@ export default function TagPanel({
                   {sortedTags.map(([tag, count]) => {
                     const filterMode = tagFilters.get(tag)
                     return (
-                      <button
+                      <FilterTagChip
                         key={tag}
-                        className={`${styles.chip} ${styles.chipFilter} ${
-                          filterMode === 'include' ? styles.chipInclude :
-                          filterMode === 'exclude' ? styles.chipExclude : ''
-                        }`}
-                        onClick={() => onCycleFilter(tag)}
-                        title={
-                          filterMode === 'include' ? `Excluding "${tag}" — click to remove filter` :
-                          filterMode === 'exclude' ? `Click to remove "${tag}" filter` :
-                          `Include only images with "${tag}"`
-                        }
-                      >
-                        <span className={styles.chipLabel}>{tag}</span>
-                        <span className={styles.chipCount}>{count}</span>
-                      </button>
+                        name={tag}
+                        count={count}
+                        mode={filterMode}
+                        onCycle={onCycleFilter}
+                      />
                     )
                   })}
                 </div>
@@ -110,7 +130,9 @@ export default function TagPanel({
   }
 
   // ── Selection view ─────────────────────────────────────────────────────────
-  const displayTags = commonTags(selected, draftTags)
+  const displayTags = selectionTags(selected, draftTags, tagFilters)
+  const commonSelectionTags = displayTags.filter((tag) => tag.isCommon)
+  const retainedFilterTags = displayTags.filter((tag) => !tag.isCommon)
 
   return (
     <div className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}>
@@ -136,30 +158,52 @@ export default function TagPanel({
             {selected.length === 1 ? selected[0].name : `${selected.length} images selected`}
           </p>
 
-          {selected.length > 1 && displayTags.length > 0 && (
+          {selected.length > 1 && commonSelectionTags.length > 0 && (
             <p className={styles.hint}>Common tags</p>
           )}
 
           <div className={styles.chips}>
-            {displayTags.map((tag) => (
-              <span key={tag} className={styles.chip}>
-                <span className={styles.chipLabel}>{tag}</span>
+            {commonSelectionTags.map(({ name }) => (
+              <span key={name} className={styles.chip}>
+                <span className={styles.chipLabel}>{name}</span>
                 <button
                   className={styles.chipDel}
-                  onClick={() => onRemoveTag(tag)}
+                  onClick={() => onRemoveTag(name)}
                   disabled={isWorking}
-                  title={`Remove "${tag}"`}
+                  title={`Remove "${name}"`}
                 >
                   ×
                 </button>
               </span>
             ))}
-            {displayTags.length === 0 && (
+            {commonSelectionTags.length === 0 && (
               <span className={styles.hint}>
                 {selected.length > 1 ? 'No common tags' : 'No tags yet'}
               </span>
             )}
           </div>
+
+          {retainedFilterTags.length > 0 && (
+            <>
+              <p className={styles.hint}>Active filters</p>
+              <div className={styles.chips}>
+                {retainedFilterTags.map(({ name, filterMode }) => (
+                  <FilterTagChip
+                    key={name}
+                    name={name}
+                    mode={filterMode}
+                    onCycle={onCycleFilter}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {hasFilters && (
+            <button className={styles.clearFiltersBtn} onClick={onClearFilters}>
+              Clear filters
+            </button>
+          )}
 
           <div className={styles.addRow}>
             <input

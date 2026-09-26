@@ -2,6 +2,12 @@ import type { ImageItem } from '../../model/types'
 
 export type TagFilterMode = 'include' | 'exclude'
 
+export interface SelectionTag {
+  name: string
+  isCommon: boolean
+  filterMode?: TagFilterMode
+}
+
 export function effectiveTags(image: ImageItem, drafts: Map<string, string[]>): string[] {
   return drafts.get(image.id) ?? image.tags
 }
@@ -38,4 +44,24 @@ export function commonTags(images: ImageItem[], drafts: Map<string, string[]>): 
   return effectiveTags(images[0], drafts).filter((tag) =>
     images.every((image) => effectiveTags(image, drafts).includes(tag))
   )
+}
+
+export function selectionTags(
+  images: ImageItem[],
+  drafts: Map<string, string[]>,
+  filters: Map<string, TagFilterMode>
+): SelectionTag[] {
+  const common = commonTags(images, drafts)
+  const commonNames = new Set(common)
+  const tags = common.map((name) => ({
+    name,
+    isCommon: true,
+    filterMode: filters.get(name)
+  }))
+
+  for (const [name, filterMode] of filters) {
+    if (!commonNames.has(name)) tags.push({ name, isCommon: false, filterMode })
+  }
+
+  return tags
 }
