@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc/registerHandlers'
 import { handleLocalFiles, registerLocalFileScheme } from './localFileProtocol'
+import { pruneThumbnailCache } from './thumbnailCache'
 
 registerLocalFileScheme()
 
@@ -50,6 +51,9 @@ app.whenReady().then(() => {
 
   registerIpcHandlers()
   createWindow()
+
+  // Trim the thumbnail cache once the window is up so startup isn't slowed.
+  setTimeout(() => void pruneThumbnailCache(), 10_000)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

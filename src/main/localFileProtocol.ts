@@ -3,7 +3,9 @@ import { createReadStream } from 'fs'
 import { stat } from 'fs/promises'
 import { extname } from 'path'
 import { Readable } from 'stream'
+import { isVideoPath } from '../shared/mediaTypes'
 import { parseByteRange } from './byteRange'
+import { getThumbnail } from './thumbnailCache'
 
 const MIME_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -48,7 +50,20 @@ export function handleLocalFiles(): void {
           : /^\/[A-Za-z]:\//.test(pathname)
             ? pathname.slice(1)
             : pathname
-      const { size } = await stat(filePath)
+      const { size, mtimeMs } = await stat(filePath)
+
+      // localfile://...?thumb serves a small cached copy for grid cards.
+      if (url.searchParams.has('thumb') && !isVideoPath(filePath)) {
+        try {
+          const thumbnail = await getThumbnail(filePath, size, mtimeMs)
+          return new Response(new Uint8Array(thumbnail), {
+            headers: { 'Content-Type': 'image/webp', 'Content-Length': String(thumbnail.length) }
+          })
+        } catch (error) {
+          console.error('[localfile] thumbnail failed, serving original:', filePath, error)
+        }
+      }
+
       const mime = MIME_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream'
       const headers = { 'Content-Type': mime, 'Accept-Ranges': 'bytes' }
 

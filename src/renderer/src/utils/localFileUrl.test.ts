@@ -16,6 +16,10 @@ describe('toLocalFileUrl', () => {
     )
   })
 
+  it('requests a thumbnail with a query flag', () => {
+    expect(toLocalFileUrl('C:\\a.png', { thumbnail: true })).toBe('localfile://file/C%3A/a.png?thumb')
+  })
+
   it('encodes characters that would otherwise end the path', () => {
     expect(toLocalFileUrl('/clips/take #2?.mp4')).toBe('localfile://file/clips/take%20%232%3F.mp4')
   })

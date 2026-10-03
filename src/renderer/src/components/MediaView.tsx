@@ -18,7 +18,13 @@ export default function MediaView({ path, name, thumbnail = false }: Props) {
 
   if (!isVideoPath(path)) {
     return thumbnail ? (
-      <img src={url} alt={name} loading="lazy" decoding="async" draggable={false} />
+      <img
+        src={toLocalFileUrl(path, { thumbnail: true })}
+        alt={name}
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+      />
     ) : (
       <img src={url} alt={name} draggable={false} />
     )
