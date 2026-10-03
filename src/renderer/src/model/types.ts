@@ -4,6 +4,7 @@ export type {
   ImageItem,
   IpcResult,
   MoveResult,
+  OperationProgress,
   RenameRequest,
   RenameResult,
   TagSaveRequest
@@ -12,6 +13,12 @@ export type {
 export type SortField = 'name' | 'mtime' | 'birthtime' | 'custom' | 'elo'
 export type SortDir = 'asc' | 'desc'
 export type KeepTossDecision = 'keep' | 'toss'
+
+export interface WorkProgress {
+  label: string
+  done: number
+  total: number
+}
 
 interface RendererApi extends AppOperationsApi {
   getPathForFile: (file: File) => string

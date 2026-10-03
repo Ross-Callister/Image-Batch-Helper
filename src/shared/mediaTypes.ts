@@ -1,5 +1,5 @@
-export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'] as const
-export const VIDEO_EXTENSIONS = ['.mp4'] as const
+export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'] as const
+export const VIDEO_EXTENSIONS = ['.mp4', '.webm'] as const
 
 function extensionOf(filePath: string): string {
   const dotIndex = filePath.lastIndexOf('.')

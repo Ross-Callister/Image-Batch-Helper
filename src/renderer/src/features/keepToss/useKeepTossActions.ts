@@ -7,7 +7,7 @@ import {
   removeImages,
   type PathChange
 } from '../../model/imageIdentity'
-import type { ImageItem, KeepTossDecision } from '../../model/types'
+import type { ImageItem, KeepTossDecision, WorkProgress } from '../../model/types'
 import { keptImageIds, tossedImageIds } from './decisionSelectors'
 
 interface KeepTossActionDependencies {
@@ -17,6 +17,7 @@ interface KeepTossActionDependencies {
   setDecisions: Dispatch<SetStateAction<Map<string, KeepTossDecision>>>
   setIsKeepToss: Dispatch<SetStateAction<boolean>>
   setIsWorking: Dispatch<SetStateAction<boolean>>
+  setProgress: Dispatch<SetStateAction<WorkProgress | null>>
   setError: Dispatch<SetStateAction<string | null>>
 }
 
@@ -27,6 +28,7 @@ export function useKeepTossActions({
   setDecisions,
   setIsKeepToss,
   setIsWorking,
+  setProgress,
   setError
 }: KeepTossActionDependencies) {
   const startKeepToss = useCallback(() => setIsKeepToss(true), [setIsKeepToss])
@@ -57,7 +59,10 @@ export function useKeepTossActions({
     if (tossedIds.length === 0) return
     setIsWorking(true)
     try {
-      const result = await window.api.trashImages(tossedIds)
+      setProgress({ label: 'Moving to Recycle Bin', done: 0, total: tossedIds.length })
+      const result = await window.api.trashImages(tossedIds, ({ done, total }) =>
+        setProgress({ label: 'Moving to Recycle Bin', done, total })
+      )
       const deleted = new Set(tossedIds.filter((path) => !result.errors.includes(path)))
       setImages((previous) => removeImages(previous, deleted))
       setDecisions((previous) => removeFromMap(previous, deleted))
@@ -69,8 +74,9 @@ export function useKeepTossActions({
       setError('Failed to move files to recycle bin.')
     } finally {
       setIsWorking(false)
+      setProgress(null)
     }
-  }, [decisions, setDecisions, setError, setImages, setIsWorking, setSelectedIds])
+  }, [decisions, setDecisions, setError, setImages, setIsWorking, setProgress, setSelectedIds])
 
   const moveKept = useCallback(
     async (destinationFolder: string) => {

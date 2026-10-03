@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import { useKeepTossActions } from '../features/keepToss/useKeepTossActions'
 import { useRankingActions } from '../features/ranking/useRankingActions'
@@ -16,7 +16,7 @@ import {
 import { applyModifiedTime } from './imageMetadata'
 import { sortImages } from './imageSorting'
 import { createRenameRequests } from './renamePlan'
-import type { ImageItem, SortField, SortDir, KeepTossDecision } from './types'
+import type { ImageItem, SortField, SortDir, KeepTossDecision, WorkProgress } from './types'
 
 export function useImageWorkspace() {
   const [images, setImages] = useState<ImageItem[]>([])
@@ -24,10 +24,12 @@ export function useImageWorkspace() {
   const [culledIds, setCulledIds] = useState<Set<string>>(new Set())
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
-  const [lastClickedId, setLastClickedId] = useState<string | null>(null)
+  // Refs rather than state so handleImageClick stays stable and memoized cards skip re-rendering.
+  const lastClickedIdRef = useRef<string | null>(null)
   const [modalImageId, setModalImageId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isWorking, setIsWorking] = useState(false)
+  const [progress, setProgress] = useState<WorkProgress | null>(null)
   const [eloScores, setEloScores] = useState<Map<string, number>>(new Map())
   const [isRanking, setIsRanking] = useState(false)
   const [isKeepToss, setIsKeepToss] = useState(false)
@@ -58,7 +60,7 @@ export function useImageWorkspace() {
         setImages(sorted)
         setSelectedIds(new Set())
         setCulledIds(new Set())
-        setLastClickedId(null)
+        lastClickedIdRef.current = null
         setModalImageId(null)
         setEloScores(new Map())
         setDraftTags(new Map())
@@ -75,33 +77,33 @@ export function useImageWorkspace() {
     [culledIds.size, sortField, sortDir]
   )
 
-  const handleImageClick = useCallback(
-    (id: string, ctrlKey: boolean, shiftKey: boolean) => {
-      setSelectedIds((prev) => {
-        if (shiftKey && lastClickedId) {
-          const ids = filteredImages.map((i) => i.id)
-          const a = ids.indexOf(lastClickedId)
-          const b = ids.indexOf(id)
-          if (a !== -1 && b !== -1) {
-            const [lo, hi] = a < b ? [a, b] : [b, a]
-            const range = new Set(ids.slice(lo, hi + 1))
-            const next = new Set(prev)
-            range.forEach((rid) => next.add(rid))
-            return next
-          }
-        }
-        if (ctrlKey) {
+  const filteredImagesRef = useRef(filteredImages)
+  filteredImagesRef.current = filteredImages
+
+  const handleImageClick = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
+    const lastClickedId = lastClickedIdRef.current
+    lastClickedIdRef.current = id
+    setSelectedIds((prev) => {
+      if (shiftKey && lastClickedId) {
+        const ids = filteredImagesRef.current.map((i) => i.id)
+        const a = ids.indexOf(lastClickedId)
+        const b = ids.indexOf(id)
+        if (a !== -1 && b !== -1) {
+          const [lo, hi] = a < b ? [a, b] : [b, a]
           const next = new Set(prev)
-          if (next.has(id)) next.delete(id)
-          else next.add(id)
+          ids.slice(lo, hi + 1).forEach((rid) => next.add(rid))
           return next
         }
-        return new Set([id])
-      })
-      setLastClickedId(id)
-    },
-    [filteredImages, lastClickedId]
-  )
+      }
+      if (ctrlKey) {
+        const next = new Set(prev)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+      }
+      return new Set([id])
+    })
+  }, [])
 
   const openModal = useCallback((id: string) => {
     setModalImageId(id)
@@ -174,7 +176,10 @@ export function useImageWorkspace() {
     setIsWorking(true)
     try {
       const paths = [...culledIds]
-      const result = await window.api.trashImages(paths)
+      setProgress({ label: 'Moving to Recycle Bin', done: 0, total: paths.length })
+      const result = await window.api.trashImages(paths, ({ done, total }) =>
+        setProgress({ label: 'Moving to Recycle Bin', done, total })
+      )
       const deleted = new Set(paths.filter((p) => !result.errors.includes(p)))
       setImages((prev) => removeImages(prev, deleted))
       setCulledIds((prev) => removeFromSet(prev, deleted))
@@ -186,6 +191,7 @@ export function useImageWorkspace() {
       setError('Failed to move files to recycle bin.')
     } finally {
       setIsWorking(false)
+      setProgress(null)
     }
   }, [culledIds])
 
@@ -211,7 +217,7 @@ export function useImageWorkspace() {
     setImages([])
     setSelectedIds(new Set())
     setCulledIds(new Set())
-    setLastClickedId(null)
+    lastClickedIdRef.current = null
     setModalImageId(null)
     setEloScores(new Map())
     setDraftTags(new Map())
@@ -250,6 +256,7 @@ export function useImageWorkspace() {
     setDecisions: setKeepTossDecisions,
     setIsKeepToss,
     setIsWorking,
+    setProgress,
     setError
   })
 
@@ -304,6 +311,7 @@ export function useImageWorkspace() {
     modalImageId,
     error,
     isWorking,
+    progress,
     eloScores,
     isRanking,
     loadImages,

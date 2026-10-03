@@ -2,6 +2,7 @@ import type {
   ImageItem,
   IpcResult,
   MoveResult,
+  OperationProgress,
   RenameRequest,
   RenameResult,
   TagSaveRequest
@@ -9,7 +10,10 @@ import type {
 
 export interface AppOperationsApi {
   loadImages: (paths: string[]) => Promise<ImageItem[]>
-  trashImages: (paths: string[]) => Promise<IpcResult>
+  trashImages: (
+    paths: string[],
+    onProgress?: (progress: OperationProgress) => void
+  ) => Promise<IpcResult>
   touchImages: (paths: string[]) => Promise<IpcResult>
   confirm: (message: string) => Promise<boolean>
   renameImages: (renames: RenameRequest[]) => Promise<RenameResult[]>

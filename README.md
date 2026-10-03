@@ -6,7 +6,7 @@ Built and tested on Windows. The app doesn't rely on Windows-only APIs, so it sh
 
 ## Features
 
-- **Drag-and-drop import** — drop image files or whole folders to load them (`.jpg`, `.jpeg`, `.png`, `.webp`, and `.mp4` videos, which loop silently in Keep/Toss and Ranking sessions)
+- **Drag-and-drop import** — drop image files or whole folders to load them (`.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`, and `.mp4`/`.webm` videos, which loop silently in Keep/Toss and Ranking sessions)
 - **Grid view** with click/shift-click/ctrl-click multi-select and a full-size preview modal (with prev/next navigation)
 - **Sorting** by name, last modified, date created, custom drag order, or Elo rating
 - **Cull workflow** — mark images for deletion, unmark, then confirm to send them to the Recycle Bin

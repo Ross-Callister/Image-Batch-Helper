@@ -35,6 +35,7 @@ describe('keep/toss actions', () => {
       setDecisions: (update) => { decisions = applyUpdate(decisions, update) },
       setIsKeepToss: () => undefined,
       setIsWorking: (update) => { isWorking = applyUpdate(isWorking, update) },
+      setProgress: () => undefined,
       setError: (update) => { error = applyUpdate(error, update) }
     })
 
@@ -68,6 +69,7 @@ describe('keep/toss actions', () => {
       setDecisions: (update) => { decisions = applyUpdate(decisions, update) },
       setIsKeepToss: () => undefined,
       setIsWorking: () => undefined,
+      setProgress: () => undefined,
       setError: (update) => { error = applyUpdate(error, update) }
     })
 

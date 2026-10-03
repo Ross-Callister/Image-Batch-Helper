@@ -7,8 +7,14 @@ describe('isVideoPath', () => {
     expect(isVideoPath('/home/me/INTRO.MP4')).toBe(true)
   })
 
+  it('detects webm files', () => {
+    expect(isVideoPath('clip.webm')).toBe(true)
+    expect(isVideoPath('CLIP.WEBM')).toBe(true)
+  })
+
   it('rejects images and extensionless paths', () => {
     expect(isVideoPath('photo.jpg')).toBe(false)
+    expect(isVideoPath('animation.gif')).toBe(false)
     expect(isVideoPath('/home/me/folder.mp4/file')).toBe(false)
   })
 })
@@ -17,7 +23,9 @@ describe('isMediaPath', () => {
   it('accepts supported images and videos', () => {
     expect(isMediaPath('a.jpeg')).toBe(true)
     expect(isMediaPath('a.webp')).toBe(true)
+    expect(isMediaPath('a.gif')).toBe(true)
     expect(isMediaPath('a.mp4')).toBe(true)
+    expect(isMediaPath('a.webm')).toBe(true)
   })
 
   it('rejects unsupported files', () => {

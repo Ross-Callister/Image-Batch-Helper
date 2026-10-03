@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { forwardRef, memo } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { isVideoPath } from '../../../shared/mediaTypes'
@@ -10,29 +10,18 @@ interface Props {
   item: ImageItem
   isSelected: boolean
   isCulled: boolean
-  isDragEnabled: boolean
   onClick: (id: string, ctrlKey: boolean, shiftKey: boolean) => void
   onDoubleClick: (id: string) => void
 }
 
-export default function ImageCard({
-  item,
-  isSelected,
-  isCulled,
-  isDragEnabled,
-  onClick,
-  onDoubleClick
-}: Props) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.id,
-    disabled: !isDragEnabled
-  })
+interface CardBodyProps extends Props, Omit<React.HTMLAttributes<HTMLDivElement>, keyof Props> {
+  isDragging?: boolean
+}
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition
-  }
-
+const CardBody = forwardRef<HTMLDivElement, CardBodyProps>(function CardBody(
+  { item, isSelected, isCulled, isDragging = false, onClick, onDoubleClick, ...rest },
+  ref
+) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     onClick(item.id, e.ctrlKey || e.metaKey, e.shiftKey)
@@ -45,12 +34,11 @@ export default function ImageCard({
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
+      ref={ref}
+      {...rest}
       className={`${styles.card} ${isSelected ? styles.selected : ''} ${isCulled ? styles.culled : ''} ${isDragging ? styles.dragging : ''}`}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
-      {...(isDragEnabled ? { ...attributes, ...listeners } : {})}
     >
       <div className={styles.thumb}>
         <MediaView path={item.path} name={item.name} thumbnail />
@@ -75,4 +63,29 @@ export default function ImageCard({
       </div>
     </div>
   )
-}
+})
+
+/** Plain grid card. Memoized so selection changes only re-render the cards they affect. */
+const ImageCard = memo(function ImageCard(props: Props) {
+  return <CardBody {...props} />
+})
+
+/** Card that can be dragged to reorder; only used while sorting by custom order. */
+export const SortableImageCard = memo(function SortableImageCard(props: Props) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.item.id
+  })
+
+  return (
+    <CardBody
+      ref={setNodeRef}
+      {...props}
+      {...attributes}
+      {...listeners}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      isDragging={isDragging}
+    />
+  )
+})
+
+export default ImageCard

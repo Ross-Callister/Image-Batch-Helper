@@ -10,6 +10,9 @@
   transition: border-color 0.1s, background 0.1s;
   outline: none;
   touch-action: none;
+  /* Skip layout and paint for off-screen cards; 'auto' remembers the last rendered height. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 190px;
 }
 
 .card:hover {

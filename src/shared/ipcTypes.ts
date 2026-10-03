@@ -12,6 +12,11 @@ export interface IpcResult {
   errors: string[]
 }
 
+export interface OperationProgress {
+  done: number
+  total: number
+}
+
 export interface TagSaveRequest {
   imagePath: string
   tags: string[]

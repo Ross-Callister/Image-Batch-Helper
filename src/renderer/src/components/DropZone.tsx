@@ -68,7 +68,7 @@ export default function DropZone({ hasImages, onDrop }: Props) {
             <path d="m21 15-5-5L5 21" />
           </svg>
           <p className={styles.emptyTitle}>Drop images or a folder here</p>
-          <p className={styles.emptySubtitle}>Supports JPEG, PNG, and WebP</p>
+          <p className={styles.emptySubtitle}>Supports JPEG, PNG, WebP, GIF, MP4, and WebM</p>
         </div>
       </div>
     )

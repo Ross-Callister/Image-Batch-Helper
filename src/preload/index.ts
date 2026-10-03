@@ -1,12 +1,27 @@
-import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
+import type { OperationProgress } from '../shared/ipcTypes'
 import type { ImageBatchApi } from './apiTypes'
+
+let nextRequestId = 0
 
 const api: ImageBatchApi = {
   getPathForFile: (file: File): string => webUtils.getPathForFile(file),
 
   loadImages: (paths: string[]) => ipcRenderer.invoke('images:load', paths),
 
-  trashImages: (paths: string[]) => ipcRenderer.invoke('images:trash', paths),
+  trashImages: async (paths, onProgress) => {
+    if (!onProgress) return ipcRenderer.invoke('images:trash', paths)
+    const requestId = nextRequestId++
+    const listener = (_event: IpcRendererEvent, id: number, progress: OperationProgress) => {
+      if (id === requestId) onProgress(progress)
+    }
+    ipcRenderer.on('images:trashProgress', listener)
+    try {
+      return await ipcRenderer.invoke('images:trash', paths, requestId)
+    } finally {
+      ipcRenderer.removeListener('images:trashProgress', listener)
+    }
+  },
 
   touchImages: (paths: string[]) => ipcRenderer.invoke('images:touch', paths),
 

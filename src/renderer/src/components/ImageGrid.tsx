@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback, useMemo } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -8,7 +8,7 @@ import {
   type DragEndEvent
 } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import ImageCard from './ImageCard'
+import ImageCard, { SortableImageCard } from './ImageCard'
 import type { ImageItem, SortField } from '../model/types'
 import styles from './ImageGrid.module.css'
 
@@ -68,24 +68,34 @@ export default function ImageGrid({
     onSelectNone()
   }, [onSelectNone])
 
+  const imageIds = useMemo(() => images.map((i) => i.id), [images])
+
   if (images.length === 0) return null
+
+  // Drag-and-drop registers every card with dnd-kit, which is costly with thousands of
+  // cards, so only set it up while sorting by custom order.
+  const Card = isDragEnabled ? SortableImageCard : ImageCard
+  const grid = (
+    <div className={styles.grid} onClick={handleGridClick}>
+      {images.map((item) => (
+        <Card
+          key={item.id}
+          item={item}
+          isSelected={selectedIds.has(item.id)}
+          isCulled={culledIds.has(item.id)}
+          onClick={onImageClick}
+          onDoubleClick={onImageDoubleClick}
+        />
+      ))}
+    </div>
+  )
+
+  if (!isDragEnabled) return grid
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={images.map((i) => i.id)} strategy={rectSortingStrategy}>
-        <div className={styles.grid} onClick={handleGridClick}>
-          {images.map((item) => (
-            <ImageCard
-              key={item.id}
-              item={item}
-              isSelected={selectedIds.has(item.id)}
-              isCulled={culledIds.has(item.id)}
-              isDragEnabled={isDragEnabled}
-              onClick={onImageClick}
-              onDoubleClick={onImageDoubleClick}
-            />
-          ))}
-        </div>
+      <SortableContext items={imageIds} strategy={rectSortingStrategy}>
+        {grid}
       </SortableContext>
     </DndContext>
   )

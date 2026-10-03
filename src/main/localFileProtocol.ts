@@ -11,7 +11,8 @@ const MIME_TYPES: Record<string, string> = {
   '.png': 'image/png',
   '.webp': 'image/webp',
   '.gif': 'image/gif',
-  '.mp4': 'video/mp4'
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm'
 }
 
 export function registerLocalFileScheme(): void {
@@ -37,9 +38,16 @@ function fileBody(filePath: string, start: number, end: number): ReadableStream 
 export function handleLocalFiles(): void {
   protocol.handle('localfile', async (request) => {
     try {
-      // localfile://file/C%3A/dir/a.jpg on Windows, localfile://file/home/dir/a.jpg elsewhere.
-      const pathname = decodeURIComponent(new URL(request.url).pathname)
-      const filePath = /^\/[A-Za-z]:\//.test(pathname) ? pathname.slice(1) : pathname
+      // localfile://file/C%3A/dir/a.jpg on Windows, localfile://file/home/dir/a.jpg elsewhere,
+      // localfile://unc/server/share/a.jpg for \\server\share\a.jpg.
+      const url = new URL(request.url)
+      const pathname = decodeURIComponent(url.pathname)
+      const filePath =
+        url.hostname === 'unc'
+          ? '\\\\' + pathname.slice(1).replace(/\//g, '\\')
+          : /^\/[A-Za-z]:\//.test(pathname)
+            ? pathname.slice(1)
+            : pathname
       const { size } = await stat(filePath)
       const mime = MIME_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream'
       const headers = { 'Content-Type': mime, 'Accept-Ranges': 'bytes' }

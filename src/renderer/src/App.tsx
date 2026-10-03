@@ -3,6 +3,7 @@ import { useImageWorkspace } from './model/useImageWorkspace'
 import DropZone from './components/DropZone'
 import ImageGrid from './components/ImageGrid'
 import ImageModal from './components/ImageModal'
+import ProgressOverlay from './components/ProgressOverlay'
 import KeepTossSession from './features/keepToss/KeepTossSession'
 import RankingSession from './features/ranking/RankingSession'
 import TagPanel from './features/tags/TagPanel'
@@ -114,6 +115,8 @@ export default function App() {
         onMoveKept={store.moveKept}
         onReset={store.resetKeepToss}
       />
+
+      <ProgressOverlay progress={store.progress} />
     </div>
   )
 }
